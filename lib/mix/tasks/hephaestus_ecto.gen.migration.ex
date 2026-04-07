@@ -7,6 +7,22 @@ defmodule Mix.Tasks.HephaestusEcto.Gen.Migration do
   import Mix.Generator
 
   @shortdoc "Generates a workflow_instances migration that delegates to HephaestusEcto.Migration"
+  @moduledoc """
+  Generates the migration for the `workflow_instances` table.
+
+  The generated migration delegates to `HephaestusEcto.Migration`, keeping
+  the table definition in the library and the migration timestamp in your app.
+
+      $ mix hephaestus_ecto.gen.migration
+
+  ## Options
+
+    * `-r`, `--repo` — the repo to generate the migration for
+    * `--migrations-path` — custom migrations directory
+    * `--no-compile` — skip compilation
+    * `--no-deps-check` — skip dependency check
+
+  """
 
   @aliases [r: :repo]
   @switches [

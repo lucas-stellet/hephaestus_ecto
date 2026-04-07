@@ -1,8 +1,23 @@
 defmodule HephaestusEcto.Serializer do
-  @moduledoc false
+  @moduledoc """
+  Converts between `Hephaestus.Core.Instance` structs and database-safe values.
+
+  Handles the type conversions required to persist Elixir-specific types
+  (atoms, MapSets, module references, DateTimes) into PostgreSQL JSONB.
+
+  All deserialization uses `String.to_existing_atom/1` to prevent
+  arbitrary atom creation from database values.
+  """
 
   alias Hephaestus.Core.{Context, ExecutionEntry, Instance}
 
+  @doc """
+  Serializes an `Instance` struct into a tuple of database-safe values.
+
+  Returns `{id, workflow_string, status_string, state_map}` where `state_map`
+  contains the serialized context, step configs, active/completed steps,
+  and execution history.
+  """
   @spec to_db(Instance.t()) :: {String.t(), String.t(), String.t(), map()}
   def to_db(%Instance{} = instance) do
     state = %{
@@ -17,6 +32,12 @@ defmodule HephaestusEcto.Serializer do
     {instance.id, Atom.to_string(instance.workflow), Atom.to_string(instance.status), state}
   end
 
+  @doc """
+  Reconstructs an `Instance` struct from database values.
+
+  Converts string module names back to atoms (via `String.to_existing_atom/1`),
+  sorted lists back to MapSets, and ISO 8601 timestamps back to `DateTime`.
+  """
   @spec from_db(String.t(), String.t(), String.t(), map()) :: Instance.t()
   def from_db(id, workflow, status, state) when is_map(state) do
     %Instance{
