@@ -27,7 +27,8 @@ defmodule HephaestusEcto.MixProject do
     [
       {:hephaestus, path: "../hephaestus_core"},
       {:ecto_sql, "~> 3.10"},
-      {:postgrex, ">= 0.0.0"}
+      {:postgrex, ">= 0.0.0"},
+      {:jason, "~> 1.4"}
     ]
   end
 
