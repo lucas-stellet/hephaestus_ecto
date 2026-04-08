@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-04-08
+
+### Fixed
+
+- `Serializer.to_db/1` and `Serializer.from_db/4` now serialize/deserialize the `runtime_metadata` field from `Hephaestus.Core.Instance`, preventing data loss on persistence.
+
+### Changed
+
+- Bumped `hephaestus` dependency to `~> 0.1.4` (required for `runtime_metadata` support).
+
 ## [0.1.0] - 2026-04-07
 
 ### Added
@@ -19,4 +29,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README with setup, usage, and architecture overview.
 - Hex package configuration with MIT license.
 
+[0.1.1]: https://github.com/lucas-stellet/hephaestus_ecto/releases/tag/v0.1.1
 [0.1.0]: https://github.com/lucas-stellet/hephaestus_ecto/releases/tag/v0.1.0

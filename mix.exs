@@ -1,7 +1,7 @@
 defmodule HephaestusEcto.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
   @source_url "https://github.com/lucas-stellet/hephaestus_ecto"
 
   def project do
@@ -32,7 +32,7 @@ defmodule HephaestusEcto.MixProject do
 
   defp deps do
     [
-      {:hephaestus, "~> 0.1.0"},
+      {:hephaestus, "~> 0.1.4"},
       {:ecto_sql, "~> 3.10"},
       {:postgrex, ">= 0.0.0"},
       {:jason, "~> 1.4"},

@@ -26,7 +26,8 @@ defmodule HephaestusEcto.Serializer do
       "step_configs" => serialize_step_configs(instance.step_configs),
       "active_steps" => mapset_to_sorted_strings(instance.active_steps),
       "completed_steps" => mapset_to_sorted_strings(instance.completed_steps),
-      "execution_history" => Enum.map(instance.execution_history, &serialize_entry/1)
+      "execution_history" => Enum.map(instance.execution_history, &serialize_entry/1),
+      "runtime_metadata" => instance.runtime_metadata
     }
 
     {instance.id, Atom.to_string(instance.workflow), Atom.to_string(instance.status), state}
@@ -49,7 +50,8 @@ defmodule HephaestusEcto.Serializer do
       step_configs: deserialize_step_configs(state["step_configs"] || %{}),
       active_steps: strings_to_mapset(state["active_steps"] || []),
       completed_steps: strings_to_mapset(state["completed_steps"] || []),
-      execution_history: Enum.map(state["execution_history"] || [], &deserialize_entry/1)
+      execution_history: Enum.map(state["execution_history"] || [], &deserialize_entry/1),
+      runtime_metadata: state["runtime_metadata"] || %{}
     }
   end
 

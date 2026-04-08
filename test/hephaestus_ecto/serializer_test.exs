@@ -83,5 +83,46 @@ defmodule HephaestusEcto.SerializerTest do
       assert recovered.active_steps == MapSet.new()
       assert recovered.completed_steps == MapSet.new()
     end
+
+    test "round-trips runtime_metadata" do
+      original = %Instance{
+        id: "test-id",
+        workflow: HephaestusEcto.Test.SimpleWorkflow,
+        status: :running,
+        current_step: HephaestusEcto.Test.PassStep,
+        context: Context.new(%{}),
+        step_configs: %{},
+        active_steps: MapSet.new(),
+        completed_steps: MapSet.new(),
+        execution_history: [],
+        runtime_metadata: %{"user_email" => "test@example.com", "trace_id" => "abc-123"}
+      }
+
+      {id, workflow, status, state} = Serializer.to_db(original)
+      recovered = Serializer.from_db(id, workflow, status, state)
+
+      assert recovered.runtime_metadata == %{"user_email" => "test@example.com", "trace_id" => "abc-123"}
+    end
+
+    test "defaults runtime_metadata to empty map for legacy state" do
+      state = %{
+        "current_step" => nil,
+        "context" => %{"initial" => %{}, "steps" => %{}},
+        "step_configs" => %{},
+        "active_steps" => [],
+        "completed_steps" => [],
+        "execution_history" => []
+      }
+
+      recovered =
+        Serializer.from_db(
+          "test-id",
+          "Elixir.HephaestusEcto.Test.SimpleWorkflow",
+          "pending",
+          state
+        )
+
+      assert recovered.runtime_metadata == %{}
+    end
   end
 end
