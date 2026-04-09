@@ -8,7 +8,7 @@ defmodule HephaestusEcto.Migrations.Postgres.V02 do
       add_if_not_exists(:workflow_version, :integer, null: false, default: 1)
     end
 
-    create(
+    create_if_not_exists(
       index(:workflow_instances, [:workflow, :workflow_version],
         prefix: prefix,
         name: :workflow_instances_workflow_workflow_version_index

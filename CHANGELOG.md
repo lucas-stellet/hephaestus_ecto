@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-04-09
+
+### Fixed
+
+- Fixed `migrated_version/1` query for the `public` schema — the previous query concatenated `nspname || '.' || relname` and compared against a value without the `public.` prefix, so it always returned 0 on the default schema. Now uses separate `relname` / `nspname` comparisons, matching the Oban pattern.
+- Fixed `record_version/2` to always include the schema prefix using `quoted_prefix` (e.g., `"public".workflow_instances`).
+- Made V01 migration fully idempotent: `create` → `create_if_not_exists` for table and indexes. Safe to re-run if table comments are lost.
+- Made V02 index creation idempotent: `create` → `create_if_not_exists`.
+- Added `quoted_prefix` to opts (via `with_defaults/2`) following Oban's pattern.
+- Added migration tests for `migrated_version` on the `public` schema and when comment is NULL.
+
 ## [0.2.0] - 2026-04-08
 
 ### Added

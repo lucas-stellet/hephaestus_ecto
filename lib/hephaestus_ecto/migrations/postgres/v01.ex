@@ -3,10 +3,8 @@ defmodule HephaestusEcto.Migrations.Postgres.V01 do
 
   use Ecto.Migration
 
-  alias HephaestusEcto.Migrations.Postgres
-
-  def up(%{prefix: prefix}) do
-    create table(:workflow_instances, primary_key: false, prefix: prefix) do
+  def up(%{prefix: prefix, quoted_prefix: quoted}) do
+    create_if_not_exists table(:workflow_instances, primary_key: false, prefix: prefix) do
       add(:id, :uuid, primary_key: true)
       add(:workflow, :string, null: false)
       add(:status, :string, null: false, default: "pending")
@@ -14,12 +12,23 @@ defmodule HephaestusEcto.Migrations.Postgres.V01 do
       timestamps()
     end
 
-    create(index(:workflow_instances, [:status], prefix: prefix))
-    create(index(:workflow_instances, [:workflow], prefix: prefix))
+    create_if_not_exists(index(:workflow_instances, [:status], prefix: prefix))
+    create_if_not_exists(index(:workflow_instances, [:workflow], prefix: prefix))
 
-    execute(
-      "CREATE INDEX idx_workflow_instances_state ON #{Postgres.qualified_table(prefix, "workflow_instances")} USING GIN (state jsonb_path_ops)"
-    )
+    execute("""
+    DO $$
+    BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_indexes
+      WHERE schemaname = '#{prefix}'
+      AND tablename = 'workflow_instances'
+      AND indexname = 'idx_workflow_instances_state'
+    ) THEN
+      CREATE INDEX idx_workflow_instances_state
+      ON #{quoted}.workflow_instances USING GIN (state jsonb_path_ops);
+    END IF;
+    END$$;
+    """)
   end
 
   def down(%{prefix: prefix}) do
