@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- V02 migration adding `workflow_version` integer column (NOT NULL, default 1) and composite index `(workflow, workflow_version)` to `workflow_instances`.
+
 ### Changed
 
+- Bumped migration orchestrator `@current_version` to 2.
 - Refactored `HephaestusEcto.Migration` into a versioned migration system following Oban's pattern.
   - Extracted current migration logic into `HephaestusEcto.Migrations.Postgres.V01`.
   - Added orchestrator `HephaestusEcto.Migrations.Postgres` with version tracking via PostgreSQL table comments.
