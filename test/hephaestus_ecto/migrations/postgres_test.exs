@@ -23,4 +23,12 @@ defmodule HephaestusEcto.Migrations.PostgresTest do
       TestRepo.query!("DROP SCHEMA IF EXISTS #{prefix} CASCADE")
     end
   end
+
+  test "down/1 returns :ok when target version is above current version", %{prefix: prefix} do
+    try do
+      assert :ok = Postgres.down(repo: TestRepo, prefix: prefix, version: 2)
+    after
+      TestRepo.query!("DROP SCHEMA IF EXISTS #{prefix} CASCADE")
+    end
+  end
 end

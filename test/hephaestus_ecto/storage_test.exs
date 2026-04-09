@@ -1,3 +1,19 @@
+defmodule HephaestusEcto.Test_Wild.SimpleWorkflow do
+  use Hephaestus.Workflow
+
+  def start, do: HephaestusEcto.Test.PassStep
+
+  def transit(HephaestusEcto.Test.PassStep, :done, _ctx), do: Hephaestus.Steps.Done
+end
+
+defmodule HephaestusEcto.TestXWild.SimpleWorkflow do
+  use Hephaestus.Workflow
+
+  def start, do: HephaestusEcto.Test.PassStep
+
+  def transit(HephaestusEcto.Test.PassStep, :done, _ctx), do: Hephaestus.Steps.Done
+end
+
 defmodule HephaestusEcto.StorageTest do
   use ExUnit.Case, async: false
 
@@ -126,6 +142,17 @@ defmodule HephaestusEcto.StorageTest do
       results = Storage.query(@storage_name, workflow_family: "Elixir.NonExistent")
 
       assert results == []
+    end
+
+    test "query by workflow_family escapes SQL LIKE wildcards" do
+      matching = Instance.new(HephaestusEcto.Test_Wild.SimpleWorkflow, 1, %{})
+      non_matching = Instance.new(HephaestusEcto.TestXWild.SimpleWorkflow, 1, %{})
+      :ok = Storage.put(@storage_name, matching)
+      :ok = Storage.put(@storage_name, non_matching)
+
+      results = Storage.query(@storage_name, workflow_family: "Elixir.HephaestusEcto.Test_Wild")
+
+      assert Enum.map(results, & &1.workflow) == [HephaestusEcto.Test_Wild.SimpleWorkflow]
     end
 
     test "persists and retrieves workflow_version" do

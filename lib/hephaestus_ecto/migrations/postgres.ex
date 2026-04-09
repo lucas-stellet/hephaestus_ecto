@@ -35,6 +35,8 @@ defmodule HephaestusEcto.Migrations.Postgres do
 
     if initial >= opts.version do
       change(initial..(opts.version + 1)//-1, :down, opts)
+    else
+      :ok
     end
   end
 

@@ -195,7 +195,12 @@ defmodule HephaestusEcto.Storage do
         where(query, [instance], instance.workflow_version == ^version)
 
       {:workflow_family, prefix}, query when is_binary(prefix) ->
-        like_pattern = prefix <> "%"
+        escaped_prefix =
+          prefix
+          |> String.replace("%", "\\%")
+          |> String.replace("_", "\\_")
+
+        like_pattern = escaped_prefix <> "%"
         where(query, [instance], like(instance.workflow, ^like_pattern))
 
       {_key, _value}, query ->
