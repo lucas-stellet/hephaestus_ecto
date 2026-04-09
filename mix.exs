@@ -32,8 +32,7 @@ defmodule HephaestusEcto.MixProject do
 
   defp deps do
     [
-      # hex: {:hephaestus, "~> 0.2.0"}
-      {:hephaestus, path: "../hephaestus_core"},
+      {:hephaestus, "~> 0.2.0"},
       {:ecto_sql, "~> 3.10"},
       {:postgrex, ">= 0.0.0"},
       {:jason, "~> 1.4"},
