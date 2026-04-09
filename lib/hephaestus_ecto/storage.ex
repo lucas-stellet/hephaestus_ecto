@@ -5,6 +5,9 @@ defmodule HephaestusEcto.Storage do
   Uses a single `workflow_instances` table with JSONB state. The Repo module
   is stored in `persistent_term` at startup — no GenServer process overhead.
 
+  Workflow versioning is persisted alongside each instance. Query filters support both exact
+  workflow version matches and workflow-family prefix matching for versioned workflow modules.
+
   ## Usage
 
   Configure as the storage adapter in your Hephaestus entry module:
@@ -23,6 +26,22 @@ defmodule HephaestusEcto.Storage do
 
   The arity-1 callbacks (behaviour interface) use `__MODULE__` as the default name.
   The arity-2 versions accept an explicit name as the first argument.
+
+  ## Query filters
+
+  `query/1` and `query/2` support these filters:
+
+    * `:status` — match a specific runtime status
+    * `:workflow` — match an exact workflow module
+    * `:workflow_version` — match an exact integer workflow version
+    * `:workflow_family` — prefix match on the stored workflow module name
+
+  Examples:
+
+      HephaestusEcto.Storage.query(status: :running)
+      HephaestusEcto.Storage.query(workflow: MyApp.Workflows.Invoice.V2)
+      HephaestusEcto.Storage.query(workflow_version: 2)
+      HephaestusEcto.Storage.query(workflow_family: "Elixir.MyApp.Workflows.Invoice.")
   """
 
   import Ecto.Query
@@ -101,7 +120,8 @@ defmodule HephaestusEcto.Storage do
   Persists a workflow instance.
 
   Uses upsert semantics — inserts a new record or replaces `workflow`, `status`,
-  `state`, and `updated_at` on conflict.
+  `state`, and `updated_at` on conflict. `workflow_version` is inserted on first
+  write and left unchanged on conflict so historical rows keep their original version.
   """
   @impl StorageBehaviour
   @spec put(Instance.t()) :: :ok
@@ -109,6 +129,9 @@ defmodule HephaestusEcto.Storage do
 
   @doc """
   Persists a workflow instance using a named storage.
+
+  `workflow_version` is serialized from the `%Hephaestus.Core.Instance{}` and stored in the
+  `workflow_instances.workflow_version` column.
   """
   @spec put(name(), Instance.t()) :: :ok
   def put(name, %Instance{} = instance) do
@@ -168,10 +191,10 @@ defmodule HephaestusEcto.Storage do
 
   ## Examples
 
-      Storage.query(status: :running)
-      Storage.query(status: :waiting, workflow: MyApp.OrderWorkflow)
-      Storage.query(workflow_version: 2)
-      Storage.query(workflow_family: "Elixir.MyApp.Workflows")
+      HephaestusEcto.Storage.query(status: :running)
+      HephaestusEcto.Storage.query(status: :waiting, workflow: MyApp.OrderWorkflow)
+      HephaestusEcto.Storage.query(workflow_version: 2)
+      HephaestusEcto.Storage.query(workflow_family: "Elixir.MyApp.Workflows.Order.")
 
   """
   @impl StorageBehaviour

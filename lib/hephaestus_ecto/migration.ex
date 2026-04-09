@@ -2,6 +2,11 @@ defmodule HephaestusEcto.Migration do
   @moduledoc """
   Migrations create and modify the database tables HephaestusEcto needs to function.
 
+  The migration API is versioned. `up/1` and `down/1` delegate to
+  `HephaestusEcto.Migrations.Postgres`, which applies incremental migration modules
+  (`V01`, `V02`, and so on) and records the applied schema version in the
+  `workflow_instances` table comment.
+
   ## Usage
 
   To use migrations in your application you'll need to generate an `Ecto.Migration` that wraps
@@ -18,6 +23,9 @@ defmodule HephaestusEcto.Migration do
         def down, do: HephaestusEcto.Migration.down()
       end
 
+  This original zero-argument API is still supported and migrates to the latest available
+  version.
+
   ## Isolation with Prefixes
 
   HephaestusEcto supports namespacing through PostgreSQL schemas (prefixes):
@@ -28,18 +36,27 @@ defmodule HephaestusEcto.Migration do
   ## Versioning
 
   Migrations are versioned and tracked via PostgreSQL table comments. Running `up/1`
-  will only apply migrations that haven't been run yet.
+  only applies versions that haven't been run yet.
 
-  To upgrade to a specific version:
+  To upgrade incrementally to a specific version:
 
-      def up, do: HephaestusEcto.Migration.up(version: 1)
+      def up, do: HephaestusEcto.Migration.up(version: 2)
+
+  To migrate down to a specific version:
+
       def down, do: HephaestusEcto.Migration.down(version: 1)
+
+  To inspect the currently applied version:
+
+      HephaestusEcto.Migration.migrated_version()
   """
 
   use Ecto.Migration
 
   @doc """
   Run the `up` changes for all migrations between the initial version and the current version.
+
+  The default call `up()` keeps the pre-0.2.0 API intact by migrating to the latest version.
 
   ## Options
 
@@ -55,7 +72,7 @@ defmodule HephaestusEcto.Migration do
 
   ## Options
 
-    * `:version` — target version to migrate down to (defaults to initial)
+    * `:version` — target version to migrate down to (defaults to initial version)
     * `:prefix` — PostgreSQL schema prefix (defaults to `"public"`)
   """
   def down(opts \\ []) when is_list(opts) do
@@ -64,6 +81,8 @@ defmodule HephaestusEcto.Migration do
 
   @doc """
   Check the latest version the database is migrated to.
+
+  Returns `0` when the `workflow_instances` table hasn't been created yet.
 
   ## Options
 

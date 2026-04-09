@@ -7,6 +7,11 @@ defmodule HephaestusEcto.Serializer do
 
   All deserialization uses `String.to_existing_atom/1` to prevent
   arbitrary atom creation from database values.
+
+  The serialized form is a 5-tuple so the database layer can persist `workflow_version`
+  separately from the JSONB `state` payload:
+
+      {id, workflow_string, status_string, workflow_version, state_map}
   """
 
   alias Hephaestus.Core.{Context, ExecutionEntry, Instance}
@@ -17,6 +22,9 @@ defmodule HephaestusEcto.Serializer do
   Returns `{id, workflow_string, status_string, workflow_version, state_map}` where
   `state_map` contains the serialized context, step configs, active/completed steps,
   and execution history.
+
+  This tuple is intended for `HephaestusEcto.Storage.put/2`, which stores
+  `workflow_version` in its own column and the remaining state in JSONB.
   """
   @spec to_db(Instance.t()) :: {String.t(), String.t(), String.t(), pos_integer(), map()}
   def to_db(%Instance{} = instance) do
@@ -39,6 +47,10 @@ defmodule HephaestusEcto.Serializer do
 
   Converts string module names back to atoms (via `String.to_existing_atom/1`),
   sorted lists back to MapSets, and ISO 8601 timestamps back to `DateTime`.
+
+  This is the inverse of `to_db/1` and expects the same 5 arguments returned there:
+
+      HephaestusEcto.Serializer.from_db(id, workflow, status, workflow_version, state)
   """
   @spec from_db(String.t(), String.t(), String.t(), pos_integer(), map()) :: Instance.t()
   def from_db(id, workflow, status, workflow_version, state)

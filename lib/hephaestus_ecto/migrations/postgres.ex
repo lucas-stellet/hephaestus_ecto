@@ -1,5 +1,15 @@
 defmodule HephaestusEcto.Migrations.Postgres do
-  @moduledoc false
+  @moduledoc """
+  PostgreSQL migration orchestrator for `HephaestusEcto`.
+
+  This module coordinates versioned migration modules (`V01`, `V02`, and so on) and keeps the
+  applied schema version in a comment on the `workflow_instances` table. The public
+  `HephaestusEcto.Migration` module delegates here for all `up/1`, `down/1`, and
+  `migrated_version/1` calls.
+
+  The orchestrator pattern keeps each schema change isolated in its own module while still
+  exposing a stable, version-aware API to host applications.
+  """
 
   use Ecto.Migration
 

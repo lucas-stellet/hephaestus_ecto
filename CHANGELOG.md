@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Refactored `HephaestusEcto.Migration` — extracted original migration logic into `HephaestusEcto.Migrations.Postgres.V01`.
+- Refactored `HephaestusEcto.Migration` — extracted original migration logic into the internal versioned migration module under the Postgres migrations namespace.
 - Bumped `hephaestus` dependency to `~> 0.2.0`.
 
 ## [0.1.1] - 2026-04-08

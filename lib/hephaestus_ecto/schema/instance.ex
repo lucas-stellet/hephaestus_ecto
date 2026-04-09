@@ -1,5 +1,16 @@
 defmodule HephaestusEcto.Schema.Instance do
-  @moduledoc false
+  @moduledoc """
+  Ecto schema for persisted workflow instances.
+
+  Backed by the `workflow_instances` table with these fields:
+
+    * `:id` — workflow instance UUID
+    * `:workflow` — workflow module name as a string
+    * `:status` — runtime status as a string
+    * `:workflow_version` — integer workflow version persisted separately from state
+    * `:state` — JSON-compatible serialized workflow state
+    * `:inserted_at` / `:updated_at` — Ecto timestamps
+  """
 
   use Ecto.Schema
   import Ecto.Changeset
