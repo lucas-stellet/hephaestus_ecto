@@ -14,7 +14,7 @@ defmodule HephaestusEcto.ConcurrencyTest do
   end
 
   test "parallel puts for different instances" do
-    instances = for _ <- 1..10, do: Instance.new(HephaestusEcto.Test.SimpleWorkflow, %{})
+    instances = for _ <- 1..10, do: Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{})
 
     tasks =
       Enum.map(instances, fn inst ->
@@ -31,7 +31,7 @@ defmodule HephaestusEcto.ConcurrencyTest do
   end
 
   test "concurrent get during writes" do
-    instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, %{})
+    instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{})
     :ok = Storage.put(@storage_name, instance)
 
     write_task =

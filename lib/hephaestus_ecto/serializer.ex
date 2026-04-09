@@ -14,11 +14,11 @@ defmodule HephaestusEcto.Serializer do
   @doc """
   Serializes an `Instance` struct into a tuple of database-safe values.
 
-  Returns `{id, workflow_string, status_string, state_map}` where `state_map`
-  contains the serialized context, step configs, active/completed steps,
+  Returns `{id, workflow_string, status_string, workflow_version, state_map}` where
+  `state_map` contains the serialized context, step configs, active/completed steps,
   and execution history.
   """
-  @spec to_db(Instance.t()) :: {String.t(), String.t(), String.t(), map()}
+  @spec to_db(Instance.t()) :: {String.t(), String.t(), String.t(), pos_integer(), map()}
   def to_db(%Instance{} = instance) do
     state = %{
       "current_step" => maybe_module_to_string(instance.current_step),
@@ -30,7 +30,8 @@ defmodule HephaestusEcto.Serializer do
       "runtime_metadata" => instance.runtime_metadata
     }
 
-    {instance.id, Atom.to_string(instance.workflow), Atom.to_string(instance.status), state}
+    {instance.id, Atom.to_string(instance.workflow), Atom.to_string(instance.status),
+     instance.workflow_version, state}
   end
 
   @doc """
@@ -39,11 +40,13 @@ defmodule HephaestusEcto.Serializer do
   Converts string module names back to atoms (via `String.to_existing_atom/1`),
   sorted lists back to MapSets, and ISO 8601 timestamps back to `DateTime`.
   """
-  @spec from_db(String.t(), String.t(), String.t(), map()) :: Instance.t()
-  def from_db(id, workflow, status, state) when is_map(state) do
+  @spec from_db(String.t(), String.t(), String.t(), pos_integer(), map()) :: Instance.t()
+  def from_db(id, workflow, status, workflow_version, state)
+      when is_integer(workflow_version) and is_map(state) do
     %Instance{
       id: id,
       workflow: ensure_loaded_module(workflow),
+      workflow_version: workflow_version,
       status: String.to_existing_atom(status),
       current_step: maybe_string_to_module(state["current_step"]),
       context: deserialize_context(state["context"]),

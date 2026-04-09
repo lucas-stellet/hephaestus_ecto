@@ -8,15 +8,17 @@ defmodule HephaestusEcto.Schema.Instance do
   schema "workflow_instances" do
     field(:workflow, :string)
     field(:status, :string)
+    field(:workflow_version, :integer, default: 1)
     field(:state, :map)
     timestamps()
   end
 
   @required [:id, :workflow, :status, :state]
+  @cast @required ++ [:workflow_version]
 
   def changeset(instance \\ %__MODULE__{}, attrs) do
     instance
-    |> cast(attrs, @required)
+    |> cast(attrs, @cast)
     |> validate_required(@required)
     |> validate_inclusion(:status, ~w(pending running waiting completed failed))
   end

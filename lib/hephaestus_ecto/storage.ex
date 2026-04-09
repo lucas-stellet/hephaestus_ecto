@@ -112,9 +112,15 @@ defmodule HephaestusEcto.Storage do
   """
   @spec put(name(), Instance.t()) :: :ok
   def put(name, %Instance{} = instance) do
-    {id, workflow, status, state} = Serializer.to_db(instance)
+    {id, workflow, status, workflow_version, state} = Serializer.to_db(instance)
 
-    attrs = %{id: id, workflow: workflow, status: status, state: state}
+    attrs = %{
+      id: id,
+      workflow: workflow,
+      status: status,
+      workflow_version: workflow_version,
+      state: state
+    }
 
     %InstanceRecord{}
     |> InstanceRecord.changeset(attrs)
@@ -157,11 +163,15 @@ defmodule HephaestusEcto.Storage do
 
     * `:status` — filter by instance status (e.g., `:running`, `:waiting`)
     * `:workflow` — filter by workflow module
+    * `:workflow_version` — filter by exact workflow version (integer)
+    * `:workflow_family` — filter by workflow module prefix (LIKE match)
 
   ## Examples
 
       Storage.query(status: :running)
       Storage.query(status: :waiting, workflow: MyApp.OrderWorkflow)
+      Storage.query(workflow_version: 2)
+      Storage.query(workflow_family: "Elixir.MyApp.Workflows")
 
   """
   @impl StorageBehaviour
@@ -181,6 +191,13 @@ defmodule HephaestusEcto.Storage do
       {:workflow, workflow}, query ->
         where(query, [instance], instance.workflow == ^Atom.to_string(workflow))
 
+      {:workflow_version, version}, query when is_integer(version) ->
+        where(query, [instance], instance.workflow_version == ^version)
+
+      {:workflow_family, prefix}, query when is_binary(prefix) ->
+        like_pattern = prefix <> "%"
+        where(query, [instance], like(instance.workflow, ^like_pattern))
+
       {_key, _value}, query ->
         query
     end)
@@ -189,7 +206,13 @@ defmodule HephaestusEcto.Storage do
   end
 
   defp record_to_instance(%InstanceRecord{} = record) do
-    Serializer.from_db(normalize_id(record.id), record.workflow, record.status, record.state)
+    Serializer.from_db(
+      normalize_id(record.id),
+      record.workflow,
+      record.status,
+      record.workflow_version,
+      record.state
+    )
   end
 
   defp fetch_record(name, id) do
