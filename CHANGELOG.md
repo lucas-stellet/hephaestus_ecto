@@ -5,20 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-04-08
 
 ### Added
 
-- V02 migration adding `workflow_version` integer column (NOT NULL, default 1) and composite index `(workflow, workflow_version)` to `workflow_instances`.
+- Versioned migration system following Oban's pattern (`V01`, `V02`, ...).
+- `HephaestusEcto.Migrations.Postgres` orchestrator with version tracking via PostgreSQL table comments.
+- `HephaestusEcto.Migration.up/1` and `down/1` now accept `:version` and `:prefix` options.
+- `HephaestusEcto.Migration.migrated_version/1` to query the current schema version.
+- Migration V02: `workflow_version` integer column on `workflow_instances` (NOT NULL, default 1).
+- Composite index on `(workflow, workflow_version)`.
+- `workflow_version` field in Ecto schema (`HephaestusEcto.Schema.Instance`).
+- `Serializer.to_db/1` returns a 5-tuple including `workflow_version`; `Serializer.from_db/5` restores it.
+- `Storage.put/2` persists `workflow_version` (immutable on upsert).
+- `Storage.query/2` supports `:workflow_version` (integer equality) and `:workflow_family` (LIKE prefix match) filters.
 
 ### Changed
 
-- Bumped migration orchestrator `@current_version` to 2.
-- Refactored `HephaestusEcto.Migration` into a versioned migration system following Oban's pattern.
-  - Extracted current migration logic into `HephaestusEcto.Migrations.Postgres.V01`.
-  - Added orchestrator `HephaestusEcto.Migrations.Postgres` with version tracking via PostgreSQL table comments.
-  - `HephaestusEcto.Migration.up/1` and `down/1` now accept `:version` and `:prefix` options.
-  - Added `HephaestusEcto.Migration.migrated_version/1` to query the current schema version.
+- Refactored `HephaestusEcto.Migration` — extracted original migration logic into `HephaestusEcto.Migrations.Postgres.V01`.
+- Bumped `hephaestus` dependency to `~> 0.2.0`.
 
 ## [0.1.1] - 2026-04-08
 
@@ -44,5 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README with setup, usage, and architecture overview.
 - Hex package configuration with MIT license.
 
+[0.2.0]: https://github.com/lucas-stellet/hephaestus_ecto/releases/tag/v0.2.0
 [0.1.1]: https://github.com/lucas-stellet/hephaestus_ecto/releases/tag/v0.1.1
 [0.1.0]: https://github.com/lucas-stellet/hephaestus_ecto/releases/tag/v0.1.0
