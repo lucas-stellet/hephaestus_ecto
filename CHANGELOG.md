@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Refactored `HephaestusEcto.Migration` into a versioned migration system following Oban's pattern.
+  - Extracted current migration logic into `HephaestusEcto.Migrations.Postgres.V01`.
+  - Added orchestrator `HephaestusEcto.Migrations.Postgres` with version tracking via PostgreSQL table comments.
+  - `HephaestusEcto.Migration.up/1` and `down/1` now accept `:version` and `:prefix` options.
+  - Added `HephaestusEcto.Migration.migrated_version/1` to query the current schema version.
+
 ## [0.1.1] - 2026-04-08
 
 ### Fixed
