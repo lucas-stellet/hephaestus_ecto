@@ -60,5 +60,21 @@ defmodule HephaestusEcto.Schema.InstanceTest do
         assert changeset.valid? == true, "expected status '#{status}' to be valid"
       end
     end
+
+    test "workflow_version must be greater than zero" do
+      attrs = %{
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        workflow: "Elixir.MyApp.OrderWorkflow",
+        status: "pending",
+        workflow_version: 0,
+        state: %{}
+      }
+
+      changeset = Instance.changeset(attrs)
+      errors = ChangesetHelpers.errors_on(changeset)
+
+      assert changeset.valid? == false
+      assert "must be greater than 0" in errors.workflow_version
+    end
   end
 end

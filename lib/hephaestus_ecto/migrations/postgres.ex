@@ -34,7 +34,7 @@ defmodule HephaestusEcto.Migrations.Postgres do
     initial = max(migrated_version(opts), @initial_version)
 
     if initial >= opts.version do
-      change(initial..opts.version//-1, :down, opts)
+      change(initial..(opts.version + 1)//-1, :down, opts)
     end
   end
 
@@ -43,13 +43,13 @@ defmodule HephaestusEcto.Migrations.Postgres do
 
     repo = Map.get_lazy(opts, :repo, fn -> repo() end)
     escaped_prefix = Map.fetch!(opts, :escaped_prefix)
+    workflow_instances_table = qualified_table(escaped_prefix, "workflow_instances")
 
     query = """
     SELECT pg_catalog.obj_description(pg_class.oid, 'pg_class')
     FROM pg_class
     LEFT JOIN pg_namespace ON pg_namespace.oid = pg_class.relnamespace
-    WHERE pg_class.relname = 'workflow_instances'
-    AND pg_namespace.nspname = '#{escaped_prefix}'
+    WHERE quote_ident(pg_namespace.nspname) || '.' || quote_ident(pg_class.relname) = '#{workflow_instances_table}'
     """
 
     case repo.query(query, [], log: false) do
@@ -76,7 +76,11 @@ defmodule HephaestusEcto.Migrations.Postgres do
   defp record_version(_opts, 0), do: :ok
 
   defp record_version(%{prefix: prefix}, version) do
-    execute("COMMENT ON TABLE #{inspect(prefix)}.workflow_instances IS '#{version}'")
+    execute("COMMENT ON TABLE #{qualified_table(prefix, "workflow_instances")} IS '#{version}'")
+  end
+
+  def qualified_table(prefix, table) do
+    if prefix == @default_prefix, do: table, else: "#{prefix}.#{table}"
   end
 
   defp with_defaults(opts, version) do

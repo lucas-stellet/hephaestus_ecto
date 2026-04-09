@@ -3,6 +3,8 @@ defmodule HephaestusEcto.Migrations.Postgres.V01 do
 
   use Ecto.Migration
 
+  alias HephaestusEcto.Migrations.Postgres
+
   def up(%{prefix: prefix}) do
     create table(:workflow_instances, primary_key: false, prefix: prefix) do
       add(:id, :uuid, primary_key: true)
@@ -15,13 +17,8 @@ defmodule HephaestusEcto.Migrations.Postgres.V01 do
     create(index(:workflow_instances, [:status], prefix: prefix))
     create(index(:workflow_instances, [:workflow], prefix: prefix))
 
-    qualified_table =
-      if prefix == "public",
-        do: "workflow_instances",
-        else: "#{prefix}.workflow_instances"
-
     execute(
-      "CREATE INDEX idx_workflow_instances_state ON #{qualified_table} USING GIN (state jsonb_path_ops)"
+      "CREATE INDEX idx_workflow_instances_state ON #{Postgres.qualified_table(prefix, "workflow_instances")} USING GIN (state jsonb_path_ops)"
     )
   end
 

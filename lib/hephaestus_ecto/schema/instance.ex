@@ -21,5 +21,6 @@ defmodule HephaestusEcto.Schema.Instance do
     |> cast(attrs, @cast)
     |> validate_required(@required)
     |> validate_inclusion(:status, ~w(pending running waiting completed failed))
+    |> validate_number(:workflow_version, greater_than: 0)
   end
 end
