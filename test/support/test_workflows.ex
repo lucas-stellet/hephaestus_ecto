@@ -1,5 +1,5 @@
 defmodule HephaestusEcto.Test.SimpleWorkflow do
-  use Hephaestus.Workflow
+  use Hephaestus.Workflow, unique: [key: "testecto"]
 
   def start, do: HephaestusEcto.Test.PassStep
 

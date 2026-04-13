@@ -1,5 +1,5 @@
 defmodule HephaestusEcto.Test_Wild.SimpleWorkflow do
-  use Hephaestus.Workflow
+  use Hephaestus.Workflow, unique: [key: "testecto"]
 
   def start, do: HephaestusEcto.Test.PassStep
 
@@ -7,7 +7,7 @@ defmodule HephaestusEcto.Test_Wild.SimpleWorkflow do
 end
 
 defmodule HephaestusEcto.TestXWild.SimpleWorkflow do
-  use Hephaestus.Workflow
+  use Hephaestus.Workflow, unique: [key: "testecto"]
 
   def start, do: HephaestusEcto.Test.PassStep
 
@@ -30,7 +30,13 @@ defmodule HephaestusEcto.StorageTest do
 
   describe "put/2 and get/2" do
     test "persists and retrieves an instance" do
-      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{order_id: 1})
+      instance =
+        Instance.new(
+          HephaestusEcto.Test.SimpleWorkflow,
+          1,
+          %{order_id: 1},
+          "testecto::storageputget"
+        )
 
       :ok = Storage.put(@storage_name, instance)
       result = Storage.get(@storage_name, instance.id)
@@ -49,7 +55,7 @@ defmodule HephaestusEcto.StorageTest do
     end
 
     test "upserts on conflict" do
-      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{})
+      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::storageupsert")
       :ok = Storage.put(@storage_name, instance)
 
       updated = %{instance | status: :running}
@@ -62,7 +68,7 @@ defmodule HephaestusEcto.StorageTest do
 
   describe "delete/2" do
     test "removes an instance" do
-      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{})
+      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::storagedelete")
       :ok = Storage.put(@storage_name, instance)
 
       :ok = Storage.delete(@storage_name, instance.id)
@@ -79,8 +85,11 @@ defmodule HephaestusEcto.StorageTest do
 
   describe "query/2" do
     test "filters by status" do
-      pending = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{})
-      running = %{Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}) | status: :running}
+      pending = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::querystatuspending")
+
+      running =
+        %{Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::querystatusrunning") |
+          status: :running}
       :ok = Storage.put(@storage_name, pending)
       :ok = Storage.put(@storage_name, running)
 
@@ -91,7 +100,7 @@ defmodule HephaestusEcto.StorageTest do
     end
 
     test "filters by workflow" do
-      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{})
+      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::queryworkflow")
       :ok = Storage.put(@storage_name, instance)
 
       results = Storage.query(@storage_name, workflow: HephaestusEcto.Test.SimpleWorkflow)
@@ -100,7 +109,7 @@ defmodule HephaestusEcto.StorageTest do
     end
 
     test "returns empty list when no matches" do
-      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{})
+      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::queryempty")
       :ok = Storage.put(@storage_name, instance)
 
       results = Storage.query(@storage_name, status: :completed)
@@ -109,10 +118,92 @@ defmodule HephaestusEcto.StorageTest do
     end
   end
 
+  describe "query/2 with :id filter" do
+    test "returns instance matching exact ID" do
+      target = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::filterid1")
+      other = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::filterid2")
+      :ok = Storage.put(@storage_name, target)
+      :ok = Storage.put(@storage_name, other)
+
+      results = Storage.query(@storage_name, id: target.id)
+
+      assert Enum.map(results, & &1.id) == [target.id]
+    end
+  end
+
+  describe "query/2 with :status_in filter" do
+    test "returns instances matching any of the given statuses" do
+      pending = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::statusinpending")
+
+      running =
+        %{Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::statusinrunning") |
+          status: :running}
+
+      completed =
+        %{Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::statusincomplete") |
+          status: :completed}
+
+      :ok = Storage.put(@storage_name, pending)
+      :ok = Storage.put(@storage_name, running)
+      :ok = Storage.put(@storage_name, completed)
+
+      results = Storage.query(@storage_name, status_in: [:pending, :running])
+
+      assert Enum.sort(Enum.map(results, & &1.status)) == [:pending, :running]
+    end
+
+    test "returns instances matching single status" do
+      instance =
+        %{Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::statussingle") |
+          status: :running}
+
+      :ok = Storage.put(@storage_name, instance)
+
+      results = Storage.query(@storage_name, status_in: [:running])
+      assert length(results) == 1
+      assert hd(results).id == instance.id
+    end
+  end
+
+  describe "query/2 with combined new filters" do
+    test "applies :id + :status_in + :workflow with AND semantics" do
+      target = %{Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::combinedtarget") |
+        status: :running}
+
+      wrong_id = %{Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::combinedother") |
+        status: :running}
+
+      wrong_status = Instance.new(
+        HephaestusEcto.Test.SimpleWorkflow,
+        1,
+        %{},
+        "testecto::combinedthird"
+      )
+
+      wrong_workflow =
+        %{Instance.new(HephaestusEcto.TestXWild.SimpleWorkflow, 1, %{}, "testecto::combinedwild") |
+          status: :running}
+
+      :ok = Storage.put(@storage_name, target)
+      :ok = Storage.put(@storage_name, wrong_id)
+      :ok = Storage.put(@storage_name, wrong_status)
+      :ok = Storage.put(@storage_name, wrong_workflow)
+
+      results =
+        Storage.query(@storage_name,
+          id: target.id,
+          status_in: [:running],
+          workflow: HephaestusEcto.Test.SimpleWorkflow
+        )
+
+      assert Enum.map(results, & &1.id) == [target.id]
+    end
+  end
+
   describe "workflow_version query filters" do
     test "query by workflow_version" do
-      instance_v1 = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{})
-      instance_v2 = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 2, %{})
+      instance_v1 = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::versionqueryv1")
+      instance_v2 = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 2, %{}, "testecto::versionqueryv2")
       :ok = Storage.put(@storage_name, instance_v1)
       :ok = Storage.put(@storage_name, instance_v2)
 
@@ -123,7 +214,8 @@ defmodule HephaestusEcto.StorageTest do
     end
 
     test "query by workflow_family matches prefix" do
-      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{})
+      instance =
+        Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::workflowfamilymatch")
       :ok = Storage.put(@storage_name, instance)
 
       results = Storage.query(@storage_name, workflow_family: "Elixir.HephaestusEcto.Test")
@@ -136,7 +228,8 @@ defmodule HephaestusEcto.StorageTest do
     end
 
     test "query by workflow_family returns empty when no match" do
-      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{})
+      instance =
+        Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::workflowfamilyempty")
       :ok = Storage.put(@storage_name, instance)
 
       results = Storage.query(@storage_name, workflow_family: "Elixir.NonExistent")
@@ -145,8 +238,9 @@ defmodule HephaestusEcto.StorageTest do
     end
 
     test "query by workflow_family escapes SQL LIKE wildcards" do
-      matching = Instance.new(HephaestusEcto.Test_Wild.SimpleWorkflow, 1, %{})
-      non_matching = Instance.new(HephaestusEcto.TestXWild.SimpleWorkflow, 1, %{})
+      matching = Instance.new(HephaestusEcto.Test_Wild.SimpleWorkflow, 1, %{}, "testecto::wildmatch")
+      non_matching =
+        Instance.new(HephaestusEcto.TestXWild.SimpleWorkflow, 1, %{}, "testecto::wildnonmatch")
       :ok = Storage.put(@storage_name, matching)
       :ok = Storage.put(@storage_name, non_matching)
 
@@ -156,7 +250,8 @@ defmodule HephaestusEcto.StorageTest do
     end
 
     test "persists and retrieves workflow_version" do
-      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 3, %{})
+      instance =
+        Instance.new(HephaestusEcto.Test.SimpleWorkflow, 3, %{}, "testecto::versionpersist")
       :ok = Storage.put(@storage_name, instance)
 
       {:ok, recovered} = Storage.get(@storage_name, instance.id)
@@ -165,7 +260,8 @@ defmodule HephaestusEcto.StorageTest do
     end
 
     test "workflow_version is not replaced on upsert" do
-      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 5, %{})
+      instance =
+        Instance.new(HephaestusEcto.Test.SimpleWorkflow, 5, %{}, "testecto::versionupsert")
       :ok = Storage.put(@storage_name, instance)
 
       updated = %{instance | status: :running, workflow_version: 99}

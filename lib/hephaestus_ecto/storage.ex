@@ -31,14 +31,18 @@ defmodule HephaestusEcto.Storage do
 
   `query/1` and `query/2` support these filters:
 
+    * `:id` — match an exact workflow instance ID
     * `:status` — match a specific runtime status
+    * `:status_in` — match any runtime status in a list
     * `:workflow` — match an exact workflow module
     * `:workflow_version` — match an exact integer workflow version
     * `:workflow_family` — prefix match on the stored workflow module name
 
   Examples:
 
+      HephaestusEcto.Storage.query(id: "invoiceid::abc123")
       HephaestusEcto.Storage.query(status: :running)
+      HephaestusEcto.Storage.query(status_in: [:pending, :running, :waiting])
       HephaestusEcto.Storage.query(workflow: MyApp.Workflows.Invoice.V2)
       HephaestusEcto.Storage.query(workflow_version: 2)
       HephaestusEcto.Storage.query(workflow_family: "Elixir.MyApp.Workflows.Invoice.")
@@ -184,7 +188,9 @@ defmodule HephaestusEcto.Storage do
 
   ## Supported filters
 
+    * `:id` — filter by exact instance ID
     * `:status` — filter by instance status (e.g., `:running`, `:waiting`)
+    * `:status_in` — filter by multiple instance statuses
     * `:workflow` — filter by workflow module
     * `:workflow_version` — filter by exact workflow version (integer)
     * `:workflow_family` — filter by workflow module prefix (LIKE match)
@@ -192,6 +198,8 @@ defmodule HephaestusEcto.Storage do
   ## Examples
 
       HephaestusEcto.Storage.query(status: :running)
+      HephaestusEcto.Storage.query(id: "orderid::123")
+      HephaestusEcto.Storage.query(status_in: [:running, :waiting])
       HephaestusEcto.Storage.query(status: :waiting, workflow: MyApp.OrderWorkflow)
       HephaestusEcto.Storage.query(workflow_version: 2)
       HephaestusEcto.Storage.query(workflow_family: "Elixir.MyApp.Workflows.Order.")
@@ -208,8 +216,15 @@ defmodule HephaestusEcto.Storage do
   def query(name, filters) when is_list(filters) do
     filters
     |> Enum.reduce(InstanceRecord, fn
+      {:id, id}, query when is_binary(id) ->
+        where(query, [instance], instance.id == ^id)
+
       {:status, status}, query ->
         where(query, [instance], instance.status == ^Atom.to_string(status))
+
+      {:status_in, statuses}, query when is_list(statuses) ->
+        string_statuses = Enum.map(statuses, &Atom.to_string/1)
+        where(query, [instance], instance.status in ^string_statuses)
 
       {:workflow, workflow}, query ->
         where(query, [instance], instance.workflow == ^Atom.to_string(workflow))
@@ -235,7 +250,7 @@ defmodule HephaestusEcto.Storage do
 
   defp record_to_instance(%InstanceRecord{} = record) do
     Serializer.from_db(
-      normalize_id(record.id),
+      record.id,
       record.workflow,
       record.status,
       record.workflow_version,
@@ -248,8 +263,6 @@ defmodule HephaestusEcto.Storage do
   rescue
     Ecto.Query.CastError -> nil
   end
-
-  defp normalize_id(id), do: String.upcase(id)
 
   defp repo(name) do
     :persistent_term.get(repo_key(name))

@@ -4,7 +4,7 @@ defmodule HephaestusEcto.Schema.Instance do
 
   Backed by the `workflow_instances` table with these fields:
 
-    * `:id` — workflow instance UUID
+    * `:id` — workflow instance ID (business key format key::value)
     * `:workflow` — workflow module name as a string
     * `:status` — runtime status as a string
     * `:workflow_version` — integer workflow version persisted separately from state
@@ -15,7 +15,7 @@ defmodule HephaestusEcto.Schema.Instance do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @primary_key {:id, :binary_id, autogenerate: false}
+  @primary_key {:id, :string, autogenerate: false}
   schema "workflow_instances" do
     field(:workflow, :string)
     field(:status, :string)

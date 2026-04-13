@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `:id` filter for `Storage.query/2` for exact instance ID matches.
+- `:status_in` filter for `Storage.query/2` to match instances with any of the given statuses.
+- V03 migration to convert `workflow_instances.id` from `uuid` to `varchar(255)`.
+
+### Changed
+
+- BREAKING: `workflow_instances.id` changed from `uuid` to `varchar(255)` in V03 to support the new `key::value` business key format.
+- BREAKING: The Ecto schema primary key type changed from `:binary_id` to `:string`.
+- Bumped the `hephaestus` dependency from `~> 0.2.0` to `~> 0.3.0`.
+- Removed internal `normalize_id/1`; IDs are no longer uppercased on read.
+
 ## [0.2.1] - 2026-04-09
 
 ### Fixed
@@ -61,5 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hex package configuration with MIT license.
 
 [0.2.0]: https://github.com/lucas-stellet/hephaestus_ecto/releases/tag/v0.2.0
+[0.2.1]: https://github.com/lucas-stellet/hephaestus_ecto/releases/tag/v0.2.1
 [0.1.1]: https://github.com/lucas-stellet/hephaestus_ecto/releases/tag/v0.1.1
 [0.1.0]: https://github.com/lucas-stellet/hephaestus_ecto/releases/tag/v0.1.0
+[Unreleased]: https://github.com/lucas-stellet/hephaestus_ecto/compare/v0.2.1...HEAD

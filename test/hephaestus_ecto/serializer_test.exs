@@ -6,7 +6,13 @@ defmodule HephaestusEcto.SerializerTest do
 
   describe "to_db/1" do
     test "serializes a pending instance" do
-      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{order_id: 123})
+      instance =
+        Instance.new(
+          HephaestusEcto.Test.SimpleWorkflow,
+          1,
+          %{order_id: 123},
+          "testecto::serializerpending"
+        )
 
       {id, workflow, status, version, state} = Serializer.to_db(instance)
 
@@ -74,7 +80,8 @@ defmodule HephaestusEcto.SerializerTest do
     end
 
     test "workflow_version defaults to 1 in to_db" do
-      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{})
+      instance =
+        Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::serializerdefaultversion")
 
       {_id, _workflow, _status, version, _state} = Serializer.to_db(instance)
 
@@ -113,7 +120,8 @@ defmodule HephaestusEcto.SerializerTest do
     end
 
     test "handles nil current_step" do
-      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{})
+      instance =
+        Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::serializernilstep")
 
       {id, workflow, status, version, state} = Serializer.to_db(instance)
       recovered = Serializer.from_db(id, workflow, status, version, state)
@@ -122,7 +130,8 @@ defmodule HephaestusEcto.SerializerTest do
     end
 
     test "handles empty MapSets" do
-      instance = Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{})
+      instance =
+        Instance.new(HephaestusEcto.Test.SimpleWorkflow, 1, %{}, "testecto::serializeremptysets")
 
       {id, workflow, status, version, state} = Serializer.to_db(instance)
       recovered = Serializer.from_db(id, workflow, status, version, state)

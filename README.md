@@ -4,8 +4,8 @@ Ecto/PostgreSQL storage adapter for [Hephaestus](https://github.com/lucas-stelle
 
 Persists workflow instances across VM restarts using a single `workflow_instances` table with JSONB state and GIN indexing.
 
-Version `0.2.0` adds workflow versioning support, including version-aware migrations,
-persisted `workflow_version`, and richer query filters.
+Version `0.3.0` introduces mandatory business keys (`key::value` ID format),
+new query filters (`:id`, `:status_in`), and converts the `id` column from UUID to varchar(255).
 
 ## Installation
 
@@ -14,7 +14,7 @@ Add to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:hephaestus_ecto, "~> 0.2.0"}
+    {:hephaestus_ecto, "~> 0.3.0"}
   ]
 end
 ```
@@ -30,7 +30,7 @@ mix ecto.migrate
 
 This creates the `workflow_instances` table with:
 
-- UUID primary key
+- `id` varchar(255) primary key (business key format `key::value`)
 - `workflow` and `status` string columns with B-tree indexes
 - `workflow_version` integer column (default `1`)
 - composite index on `workflow` and `workflow_version`
@@ -79,10 +79,10 @@ That's it. Instances are now persisted to PostgreSQL.
 
 | Callback | Behavior |
 |----------|----------|
-| `get/1` | Fetch instance by UUID. Returns `{:ok, instance}` or `{:error, :not_found}` |
+| `get/1` | Fetch instance by ID. Returns `{:ok, instance}` or `{:error, :not_found}` |
 | `put/1` | Upsert instance (insert or replace on conflict) |
 | `delete/1` | Remove instance. Idempotent — returns `:ok` even if not found |
-| `query/1` | Filter by `:status`, `:workflow`, `:workflow_version`, and/or `:workflow_family` |
+| `query/1` | Filter by `:id`, `:status`, `:status_in`, `:workflow`, `:workflow_version`, and/or `:workflow_family` |
 
 The adapter uses `persistent_term` to store the Repo reference — no GenServer process overhead. The Repo module is resolved once at startup and looked up in constant time on every call.
 
@@ -113,7 +113,7 @@ Single table, simple structure:
 
 ```
 workflow_instances
-├── id        UUID (primary key, from Hephaestus.Core.Instance)
+├── id        VARCHAR(255) (primary key, business key format "key::value")
 ├── workflow  STRING (module name)
 ├── workflow_version INTEGER (workflow schema version, default 1)
 ├── status    STRING (pending | running | waiting | completed | failed)
@@ -124,14 +124,20 @@ workflow_instances
 ## Querying instances
 
 ```elixir
+# By exact instance ID
+HephaestusEcto.Storage.query(id: "orderid::abc123")
+
 # By status
 HephaestusEcto.Storage.query(status: :running)
+
+# By multiple statuses (active instances)
+HephaestusEcto.Storage.query(status_in: [:pending, :running, :waiting])
 
 # By workflow
 HephaestusEcto.Storage.query(workflow: MyApp.OrderWorkflow)
 
-# Combined
-HephaestusEcto.Storage.query(status: :waiting, workflow: MyApp.PaymentWorkflow)
+# Combined (AND semantics)
+HephaestusEcto.Storage.query(id: "orderid::abc123", status_in: [:pending, :running], workflow: MyApp.OrderWorkflow)
 
 # By exact workflow version
 HephaestusEcto.Storage.query(workflow_version: 2)
